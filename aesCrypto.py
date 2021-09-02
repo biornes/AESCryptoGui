@@ -28,29 +28,55 @@ class AESCipher:
         elif mode == 'GCM' and iv != None and tag != None:
             algorithm = algorithms.AES(key)
             self.cipher = Cipher(algorithm, modes.GCM(iv, tag = tag))
+            if tag == None:
+                self.encryptor = self.cipher.encryptor()
+            else:
+                self.decryptor = self.cipher.decryptor()
+        elif mode == 'GCM' and iv != None:
+            algorithm = algorithms.AES(key)
+            self.cipher = Cipher(algorithm, modes.GCM(iv))
             self.decryptor = self.cipher.decryptor()
             self.encryptor = self.cipher.encryptor()
         else:
             if tag != None:
                 self.decryptor = AESCCM(key, tag_length=len(tag))
+                self.encryptor = AESCCM(key, tag_length=len(tag))
 
 
     # bytes
     def decrypt(self, ciphertext, mode = 'bytes'):
         if mode == 'bytes':
             return self.decryptor.update(ciphertext) + self.decryptor.finalize()
-        elif mode == 'base64':
-            ciphertext = b64decode(ciphertext)
-            return self.decryptor.update(ciphertext) + self.decryptor.finalize()
-        elif mode == 'base64url':
-            ciphertext = decode_base64(ciphertext)
-            return self.decryptor.update(ciphertext) + self.decryptor.finalize()
-        elif mode == 'hex':
-            tempCiphertext = ciphertext.split()
-            ciphertext = ''.join(tempCiphertext)
-            ciphertext = bytes.fromhex(ciphertext)
-            return self.decryptor.update(ciphertext) + self.decryptor.finalize()
-
+        # elif mode == 'Base64':
+        #     ciphertext = b64decode(ciphertext)
+        #     return self.decryptor.update(ciphertext) + self.decryptor.finalize()
+        # elif mode == 'Base64url':
+        #     ciphertext = decode_base64(ciphertext)
+        #     return self.decryptor.update(ciphertext) + self.decryptor.finalize()
+        # elif mode == 'Hex':
+        #     tempCiphertext = ciphertext.split()
+        #     ciphertext = ''.join(tempCiphertext)
+        #     ciphertext = bytes.fromhex(ciphertext)
+        #     return self.decryptor.update(ciphertext) + self.decryptor.finalize()
+        # elif mode == 'Java Bytes':
+        #     ct = []
+        #     ct.append()
+        #     for i in ciphertext:
+        #         if i < 0:
+        #             ct.append(i + 255)
+        #         else:
+        #             ct.append(i)
+        #     ciphertext = b''
+        #     for j in ct:
+        #         ciphertext += j.to_bytes(1, 'little')
+        #     return self.decryptor.update(ciphertext) + self.decryptor.finalize()
+    def encrypt(self, plaintext):
+        if len(plaintext) % 16:
+            paddedLength = (len(plaintext) // 16 + 1) * 16
+            plaintext = plaintext.ljust(paddedLength, b'\x00')
+        ciphertext = self.encryptor.update(plaintext) + self.encryptor.finalize()
+        print ('tag', self.encryptor.tag)
+        return ciphertext
 
 def main():
     cipher = AESCipher(bytes.fromhex('0101010101010101010101010101010101010101010101010101010101010101'), 'ECB')
